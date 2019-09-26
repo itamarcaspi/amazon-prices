@@ -1,0 +1,74 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+
+library(tidyverse)
+library(rvest)
+library(stringr)
+library(glue)
+library(lubridate)
+
+```
+
+
+```{r}
+
+scrape_amazon <- function(code) {
+  
+  url <- glue("https://www.amazon.com/dp/{code}/")
+  
+  doc <- read_html(url)
+  
+  title <- doc %>% 
+    html_nodes("#productTitle") %>% 
+    html_text() %>% 
+    str_replace_all("\n", "") %>% 
+    str_trim()
+  
+  price <- doc %>% 
+    html_nodes(".price3P") %>% 
+    html_text() %>% 
+    gsub("[^0-9.]", "", .) %>% 
+    as.numeric()
+  
+  shipping <- doc %>% 
+    html_nodes("#ourprice_shippingmessage") %>% 
+    html_text() %>% 
+    gsub("[^0-9.]", "", .)
+  
+  date <- today()
+  
+  
+  tribble(~date, ~code, ~title, ~price, ~shipping, 
+          date, code, title, price, shipping)
+
+}
+
+
+```
+
+
+```{r}
+
+item_list <- c("B07Y7FX6LX", "B07Y7CQZ4S", "B07XLHY9CJ", "B07YB2X9T7",
+               "B07VMGLJ3Z", "B07X7PC51T", "B07WHJP2SB", "B07VJH5Y7M",
+               "B00ZD0MQQ8", "B07TW21R5H", "B07WNGZNNB", "B07WZ8YYZ1")
+
+df <- map_df(item_list, scrape_amazon)
+
+date <- today()
+file_name <- glue("output/amazon_israel_{date}.csv")
+write_csv(df, path = file_name)
+
+
+```
+
